@@ -21,7 +21,7 @@ SimulateCoalescentTree <- function(total.number.of.demes,effective.size,migratio
 	as.integer(number.of.sampled.demes),
 	as.integer(sample.sizes),
 	as.integer(number.of.loci),
-	PACKAGE = 'InfeR')
+	PACKAGE = 'PopGenInfeR')
 }
 
 SimulateIslandModel <- function(number.of.simulations,mutation.model,total.number.of.demes,number.of.loci,number.of.sampled.demes,sample.sizes) {
@@ -32,7 +32,7 @@ SimulateIslandModel <- function(number.of.simulations,mutation.model,total.numbe
 	as.integer(number.of.loci),
 	as.integer(number.of.sampled.demes),
 	as.integer(sample.sizes),
-	PACKAGE = 'InfeR')
+	PACKAGE = 'PopGenInfeR')
 }
 
 migraine.colors <- function (n = 64,redshift = 1) { ## added redshift to tim.colors to control the amount of red...

@@ -1,6 +1,6 @@
-Package: InfeR
+Package: PopGenInfeR
 Version: 0.8
-Date: 2021-02-28
+Date: 2022-02-16
 Title: A Pedagogical Tool to Teach the Basics of Inference in Population Genetics
 Author: Renaud Vitalis <renaud.vitalis@inrae.fr>.
 Maintainer: Renaud Vitalis <renaud.vitalis@inrae.fr>
