@@ -17,26 +17,26 @@
 #define PRIOR                "prior_val.in"
 
 struct node_struct {
-	int allele;                                       // allelic state of the node
+    int allele;                                       // allelic state of the node
   double time;                                      // age of the node (time = 0 at sample time)
-	struct node_struct *ancestor;                     // address of the ancestor of the node
-	struct node_struct *descendant[2];                // addresses of the descendants of the nodes
+    struct node_struct *ancestor;                     // address of the ancestor of the node
+    struct node_struct *descendant[2];                // addresses of the descendants of the nodes
 };
 
 struct tree_struct {
-	int nbr_sampled_lineages;
-	int nbr_ancestors;
+    int nbr_sampled_lineages;
+    int nbr_ancestors;
   double M;
-	struct node_struct *tree;
-	struct node_struct **list;
+    struct node_struct *tree;
+    struct node_struct **list;
 };
 
 typedef struct {
   int mutation_model;
   int nbr_allelic_states;
-	int nbr_demes;
+    int nbr_demes;
   int nbr_loci;
-	int nbr_sampled_demes;
+    int nbr_sampled_demes;
   int nbr_simulations;
   int sample_size;
   double M;         // = 2Nm
@@ -86,23 +86,24 @@ void SimulateIslandModel(int *number_of_simulations,
                          int *number_of_sampled_demes,
                          int *sample_size) {
 
-	int i,j,k,sim;
-	int sampled_lineages,max_lineages;
+    int i,j,k,sim;
+    int sampled_lineages,max_lineages;
   int dummy,ncols,nlines;
+  int error;
   char X;
   double val;
-	parameters_struct P;
+    parameters_struct P;
   statistics_struct *locus_specific;
   statistics_struct multi_locus;
-	struct node_struct *mrca;
-	
-	GetRNGstate();
+    struct node_struct *mrca;
+    
+    GetRNGstate();
   P.mutation_model = *mutation_model;
   P.nbr_demes = *total_number_of_demes;
-	P.nbr_loci = *number_of_loci;
-	P.nbr_sampled_demes = *number_of_sampled_demes;
+    P.nbr_loci = *number_of_loci;
+    P.nbr_sampled_demes = *number_of_sampled_demes;
   P.nbr_simulations = *number_of_simulations;
-	P.sample_size = *sample_size;
+    P.sample_size = *sample_size;
   if ((priorfile = fopen(PRIOR,"r")) == NULL) {
     Rprintf("%s: file not found... Run the generate.prior() function first...\n",PRIOR);
     goto end;
@@ -156,16 +157,16 @@ void SimulateIslandModel(int *number_of_simulations,
 #else
   fprintf(outfile,"  Q_within   Q_between\n");
 #endif
-	sampled_lineages = P.sample_size * P.nbr_sampled_demes;
+    sampled_lineages = P.sample_size * P.nbr_sampled_demes;
   max_lineages = 2 * sampled_lineages - 1;
   deme = (struct tree_struct *) malloc (P.nbr_demes * sizeof (struct tree_struct));
   for (i = 0; i < P.nbr_demes; ++i) {
-		if (i < P.nbr_sampled_demes) {
-			deme[i].nbr_sampled_lineages = P.sample_size;
-		} else {
-			deme[i].nbr_sampled_lineages = 0;			
-		}
-	}
+        if (i < P.nbr_sampled_demes) {
+            deme[i].nbr_sampled_lineages = P.sample_size;
+        } else {
+            deme[i].nbr_sampled_lineages = 0;
+        }
+    }
   for (j = 0; j < P.nbr_demes; ++j) {
     deme[j].list = (struct node_struct **) malloc (max_lineages * sizeof (struct node_struct *)); // These are the pointers to the lineages left in the deme
     deme[j].tree =(struct node_struct *) malloc(max_lineages * sizeof(struct node_struct)); // This is the genealogy
@@ -173,8 +174,12 @@ void SimulateIslandModel(int *number_of_simulations,
   locus_specific = (statistics_struct *) malloc (P.nbr_loci * sizeof(statistics_struct));
   rewind(priorfile);
   for (sim = 0; sim < P.nbr_simulations; ++sim) {
-    fscanf(priorfile,"%lf",&P.theta);
-    fscanf(priorfile,"%lf",&P.M);
+      if ((error = fscanf(priorfile,"%lf",&P.theta)) == 0 || error == EOF) {
+          Rprintf("STOPPED: problem reading prior file...\n");
+      }
+      if ((error = fscanf(priorfile,"%lf",&P.M)) == 0 || error == EOF) {
+          Rprintf("STOPPED: problem reading prior file...\n");
+      }
     for (j = 0; j < P.nbr_demes; ++j) {
       deme[j].M = P.M;
     }
@@ -207,133 +212,133 @@ void SimulateIslandModel(int *number_of_simulations,
     free(deme[j].list);
     free(deme[j].tree);
   }
-	free(deme);
+    free(deme);
   free(locus_specific);
   fclose(outfile);
 end :
   fclose(priorfile);
-	PutRNGstate();
+    PutRNGstate();
 }
 
 struct node_struct *build_tree_Hudson(parameters_struct P)
 
 {
-	int *last_node;																		// last_node[i] is the index of the last created node in deme i (former nbr_nodes[i])
-	int *nbr_lineages;																// nbr_lineages[i] is the number of surviving lineages in deme i
-	int total_nbr_lineages = 0;												// total_nbr_lineages is the total number of survivng lienages across all demes
-	double *p;
-	struct node_struct *topnode = NULL;
-	int i,j,number1,number2,event;
-	double sum,x;
-	double time = 0.0;
-	
-	for (i = 0; i < P.nbr_demes; ++i) {
-		for (j = 0; j < deme[i].nbr_sampled_lineages; ++j) {
-			deme[i].tree[j].time = time;									// tree[j] for j = 0, 1, ..., (n - 1) are the sampled (terminal) nodes
-			deme[i].list[j] = deme[i].tree + j;						// list points to the sampled nodes of deme i
-		}
-	}
-	last_node = (int *) malloc(P.nbr_demes * sizeof(int));
-	nbr_lineages = (int *) malloc(P.nbr_demes * sizeof(int));
-	p = (double *) malloc((2 * P.nbr_demes) * sizeof(double));
-	for (i = 0; i < P.nbr_demes; ++i) {
-		last_node[i] = nbr_lineages[i] = deme[i].nbr_sampled_lineages;
-		total_nbr_lineages += nbr_lineages[i];
-	}
-	while (total_nbr_lineages > 1) {
-		p[0] = (double) nbr_lineages[0] * (nbr_lineages[0] - 1)/* / 2 / deme[0].N*/; // Probability of coalescence in deme 0
-		p[1] = (double) p[0] + nbr_lineages[0] * deme[0].M/*deme[0].m*/;	// Probability of migration in deme 0
-		for (i = 2; i < (2 * P.nbr_demes); i += 2) {
-			j = (int) i / 2;															// Index for the demes
-			p[i] = p[i - 1] + (double) nbr_lineages[j] * (nbr_lineages[j] - 1)/* / 2 / deme[j].N*/;	// Probability of coalescence in deme i
-			p[i + 1] = p[i] + (double) nbr_lineages[j] * deme[j].M/*deme[j].m*/;	// Probability of migration in deme i
-		}
-		sum = p[2 * P.nbr_demes - 1];										// Sum over all probabilities
-		for (i = 0; i < (2 * P.nbr_demes); ++i) {
-			p[i] /= sum;
-		}
-		p[(2 * P.nbr_demes - 1)] = 1.0;
-		time += - log(1 - unif_rand()) / sum;						// Time of the next event
-		x = unif_rand();
-		i = 0;
-		while (x > p[i]) i += 1;		
-		event = i%2;
-		i /= 2;
-		switch (event) {
-			case COALESCENCE : {													// Coalescence in population i
-				number1 = (int) (unif_rand() * nbr_lineages[i]); // Draw two distinct lineages at random (number1 and number2) in deme[i]
-				do {
-					number2 = (int) (unif_rand() * nbr_lineages[i]); // Draw two distinct lineages at random (number1 and number2) in deme[i]
-				}
-				while (number2 == number1);
-				deme[i].tree[last_node[i]].time = time;			// deme[i].tree[last_node[i]] is the next internal node
-				deme[i].list[number1] -> ancestor = deme[i].tree + last_node[i]; // The ancestor of deme[i].tree[number1] is deme[i].tree[last_node[i]] (the internal node now considered)
-				deme[i].list[number2] -> ancestor = deme[i].tree + last_node[i]; // The ancestor of deme[i].tree[number2] is deme[i].tree[last_node[i]] (the internal node now considered)
-				deme[i].tree[last_node[i]].descendant[0] = deme[i].list[number1]; // The descendant_1 of deme[i].tree[last_node[i]] (the internal node now considered) is deme[i].list[number1]
-				deme[i].tree[last_node[i]].descendant[1] = deme[i].list[number2];	// The descendant_2 of deme[i].tree[last_node[i]] (the internal node now considered) is deme[i].list[number2]
-				deme[i].list[number1] = deme[i].tree + last_node[i]; // deme[i].list[number1] now points to the next internal node
-				deme[i].list[number2] = deme[i].list[--nbr_lineages[i]]; // The number of lineages in deme[i] (nbr_lineages[i]) decreases (coalescence) AND deme[i].list[number2] points to the last active lineage in deme[i]
-				--total_nbr_lineages;												// The total number of lineages decreases (coalescence)
-				++last_node[i];															// The index (last_node[i]) of the next internal node to create is increased
-				break;					
-			}
-			case MIGRATION : {														// Migration from deme j in deme i (backward in time)
-				do {
-					j = (int) (unif_rand() * P.nbr_demes);
-				}
-				while (j == i);
-				number1 = (int) (unif_rand() * nbr_lineages[i]); // Draw one lineage at random (number1) in deme[i]
-				deme[j].list[nbr_lineages[j]++] = deme[i].list[number1];
-				deme[i].list[number1] = deme[i].list[--nbr_lineages[i]];
-				break;
-			}
-		}
-	}
-	for (i = 0; i < P.nbr_demes; ++i) {
-		deme[i].nbr_ancestors = nbr_lineages[i];
-	}
-	if (total_nbr_lineages == 1) {										// If there remains a single lineage (e.g., if this is the mrca of the metapopulation considered...
-		for (i = 0; i < P.nbr_demes; ++i) {							// ... or, more insterestingly, if this is the mrca of the full sample)
-			if (nbr_lineages[i] > 0) break;								// then find the deme where this lineage is
-		}
-		topnode = &deme[i].tree[(last_node[i] - 1)];		// 'topnode' is the address of this last lineage
-	}
-	free(last_node);
-	free(nbr_lineages);
-	free(p);
-	return(topnode);
+    int *last_node;                                                                        // last_node[i] is the index of the last created node in deme i (former nbr_nodes[i])
+    int *nbr_lineages;                                                                // nbr_lineages[i] is the number of surviving lineages in deme i
+    int total_nbr_lineages = 0;                                                // total_nbr_lineages is the total number of survivng lienages across all demes
+    double *p;
+    struct node_struct *topnode = NULL;
+    int i,j,number1,number2,event;
+    double sum,x;
+    double time = 0.0;
+    
+    for (i = 0; i < P.nbr_demes; ++i) {
+        for (j = 0; j < deme[i].nbr_sampled_lineages; ++j) {
+            deme[i].tree[j].time = time;                                    // tree[j] for j = 0, 1, ..., (n - 1) are the sampled (terminal) nodes
+            deme[i].list[j] = deme[i].tree + j;                        // list points to the sampled nodes of deme i
+        }
+    }
+    last_node = (int *) malloc(P.nbr_demes * sizeof(int));
+    nbr_lineages = (int *) malloc(P.nbr_demes * sizeof(int));
+    p = (double *) malloc((2 * P.nbr_demes) * sizeof(double));
+    for (i = 0; i < P.nbr_demes; ++i) {
+        last_node[i] = nbr_lineages[i] = deme[i].nbr_sampled_lineages;
+        total_nbr_lineages += nbr_lineages[i];
+    }
+    while (total_nbr_lineages > 1) {
+        p[0] = (double) nbr_lineages[0] * (nbr_lineages[0] - 1)/* / 2 / deme[0].N*/; // Probability of coalescence in deme 0
+        p[1] = (double) p[0] + nbr_lineages[0] * deme[0].M/*deme[0].m*/;    // Probability of migration in deme 0
+        for (i = 2; i < (2 * P.nbr_demes); i += 2) {
+            j = (int) i / 2;                                                            // Index for the demes
+            p[i] = p[i - 1] + (double) nbr_lineages[j] * (nbr_lineages[j] - 1)/* / 2 / deme[j].N*/;    // Probability of coalescence in deme i
+            p[i + 1] = p[i] + (double) nbr_lineages[j] * deme[j].M/*deme[j].m*/;    // Probability of migration in deme i
+        }
+        sum = p[2 * P.nbr_demes - 1];                                        // Sum over all probabilities
+        for (i = 0; i < (2 * P.nbr_demes); ++i) {
+            p[i] /= sum;
+        }
+        p[(2 * P.nbr_demes - 1)] = 1.0;
+        time += - log(1 - unif_rand()) / sum;                        // Time of the next event
+        x = unif_rand();
+        i = 0;
+        while (x > p[i]) i += 1;
+        event = i%2;
+        i /= 2;
+        switch (event) {
+            case COALESCENCE : {                                                    // Coalescence in population i
+                number1 = (int) (unif_rand() * nbr_lineages[i]); // Draw two distinct lineages at random (number1 and number2) in deme[i]
+                do {
+                    number2 = (int) (unif_rand() * nbr_lineages[i]); // Draw two distinct lineages at random (number1 and number2) in deme[i]
+                }
+                while (number2 == number1);
+                deme[i].tree[last_node[i]].time = time;            // deme[i].tree[last_node[i]] is the next internal node
+                deme[i].list[number1] -> ancestor = deme[i].tree + last_node[i]; // The ancestor of deme[i].tree[number1] is deme[i].tree[last_node[i]] (the internal node now considered)
+                deme[i].list[number2] -> ancestor = deme[i].tree + last_node[i]; // The ancestor of deme[i].tree[number2] is deme[i].tree[last_node[i]] (the internal node now considered)
+                deme[i].tree[last_node[i]].descendant[0] = deme[i].list[number1]; // The descendant_1 of deme[i].tree[last_node[i]] (the internal node now considered) is deme[i].list[number1]
+                deme[i].tree[last_node[i]].descendant[1] = deme[i].list[number2];    // The descendant_2 of deme[i].tree[last_node[i]] (the internal node now considered) is deme[i].list[number2]
+                deme[i].list[number1] = deme[i].tree + last_node[i]; // deme[i].list[number1] now points to the next internal node
+                deme[i].list[number2] = deme[i].list[--nbr_lineages[i]]; // The number of lineages in deme[i] (nbr_lineages[i]) decreases (coalescence) AND deme[i].list[number2] points to the last active lineage in deme[i]
+                --total_nbr_lineages;                                                // The total number of lineages decreases (coalescence)
+                ++last_node[i];                                                            // The index (last_node[i]) of the next internal node to create is increased
+                break;
+            }
+            case MIGRATION : {                                                        // Migration from deme j in deme i (backward in time)
+                do {
+                    j = (int) (unif_rand() * P.nbr_demes);
+                }
+                while (j == i);
+                number1 = (int) (unif_rand() * nbr_lineages[i]); // Draw one lineage at random (number1) in deme[i]
+                deme[j].list[nbr_lineages[j]++] = deme[i].list[number1];
+                deme[i].list[number1] = deme[i].list[--nbr_lineages[i]];
+                break;
+            }
+        }
+    }
+    for (i = 0; i < P.nbr_demes; ++i) {
+        deme[i].nbr_ancestors = nbr_lineages[i];
+    }
+    if (total_nbr_lineages == 1) {                                        // If there remains a single lineage (e.g., if this is the mrca of the metapopulation considered...
+        for (i = 0; i < P.nbr_demes; ++i) {                            // ... or, more insterestingly, if this is the mrca of the full sample)
+            if (nbr_lineages[i] > 0) break;                                // then find the deme where this lineage is
+        }
+        topnode = &deme[i].tree[(last_node[i] - 1)];        // 'topnode' is the address of this last lineage
+    }
+    free(last_node);
+    free(nbr_lineages);
+    free(p);
+    return(topnode);
 }
 
 void add_mutations(parameters_struct P,
                    struct node_struct *node)
 
 {
-	int i,j;
-	int nbr_mut,tmp;
-	int time;
-	
-	for (i = 0; i < 2; ++i) {                         // This loop is over the total number of descendants of the current node
-		if (node -> descendant[i] != NULL) {
-			(node -> descendant[i]) -> allele = node -> allele; // Copy the ancestral allelic state into the current node
-			time = node -> time - ((node -> descendant[i]) -> time); // Calculate the time elapsed since ancestor
+    int i,j;
+    int nbr_mut,tmp;
+    int time;
+    
+    for (i = 0; i < 2; ++i) {                         // This loop is over the total number of descendants of the current node
+        if (node -> descendant[i] != NULL) {
+            (node -> descendant[i]) -> allele = node -> allele; // Copy the ancestral allelic state into the current node
+            time = node -> time - ((node -> descendant[i]) -> time); // Calculate the time elapsed since ancestor
       nbr_mut = (int) rpois(time * P.theta);        // Calculate the number of mutations along the branch
-			for (j = 0; j < nbr_mut; ++j) {               // This loop is over all the mutations that occurred
-				do {                                        // Draw a new allelic state
-					tmp = mutation(P,(node -> descendant[i]) -> allele); // bug fixed 17-01-2007 : was 'tmp = Mutation(node -> allele)'
-				}                                           // which caused the number of mutations to be underestimated... (mutations different from the ancestral state, not from the
-				while (tmp == (node -> descendant[i]) -> allele); // the new allele must be different from the current state
-				(node -> descendant[i]) -> allele = tmp;    // Copy the mutation into the current node
-			}
-			add_mutations(P,node -> descendant[i]);       // Play it again (recursively, throughout the tree) starting from the descendants of the current node
-		}
-	}
+            for (j = 0; j < nbr_mut; ++j) {               // This loop is over all the mutations that occurred
+                do {                                        // Draw a new allelic state
+                    tmp = mutation(P,(node -> descendant[i]) -> allele); // bug fixed 17-01-2007 : was 'tmp = Mutation(node -> allele)'
+                }                                           // which caused the number of mutations to be underestimated... (mutations different from the ancestral state, not from the
+                while (tmp == (node -> descendant[i]) -> allele); // the new allele must be different from the current state
+                (node -> descendant[i]) -> allele = tmp;    // Copy the mutation into the current node
+            }
+            add_mutations(P,node -> descendant[i]);       // Play it again (recursively, throughout the tree) starting from the descendants of the current node
+        }
+    }
 }
 
 int mutation(parameters_struct P,
              int allele)
 
 {
-	int new_allele;
+    int new_allele = 0;
  
   switch (P.mutation_model) {
     
@@ -547,30 +552,30 @@ void compute_locus_specific_identity_probabilities(parameters_struct P,
                                                    statistics_struct *sum_stat)
 
 {
-	int i,j,k,l;
-	int npairs[2];
-	double Q[2];
-	
-	npairs[WITHIN] = npairs[BETWEEN] = 0;
-	sum_stat -> Q[WITHIN] = sum_stat -> Q[BETWEEN] = 0.0;
-	for (i = 0; i < P.nbr_sampled_demes; ++i) {
-		for (j = 0; j < (deme[i].nbr_sampled_lineages - 1); ++j) {
-			for (k = (j + 1); k < deme[i].nbr_sampled_lineages; ++k) {
-				if (deme[i].tree[j].allele == deme[i].tree[k].allele) sum_stat -> Q[WITHIN] += 1.0;
-				npairs[WITHIN] += 1;
-			}
-		}
-	}
-	for (i = 0; i < (P.nbr_sampled_demes - 1); ++i) {
-		for (j = (i + 1); j < P.nbr_sampled_demes; ++j) {
-			for (k = 0; k < deme[i].nbr_sampled_lineages; ++k) {
-				for (l = 0; l < deme[j].nbr_sampled_lineages; ++l) {
-					if (deme[i].tree[k].allele == deme[j].tree[l].allele) sum_stat -> Q[BETWEEN] += 1.0;
-					npairs[BETWEEN] += 1;
-				}
-			}
-		}
-	}
+    int i,j,k,l;
+    int npairs[2];
+    double Q[2];
+    
+    npairs[WITHIN] = npairs[BETWEEN] = 0;
+    sum_stat -> Q[WITHIN] = sum_stat -> Q[BETWEEN] = 0.0;
+    for (i = 0; i < P.nbr_sampled_demes; ++i) {
+        for (j = 0; j < (deme[i].nbr_sampled_lineages - 1); ++j) {
+            for (k = (j + 1); k < deme[i].nbr_sampled_lineages; ++k) {
+                if (deme[i].tree[j].allele == deme[i].tree[k].allele) sum_stat -> Q[WITHIN] += 1.0;
+                npairs[WITHIN] += 1;
+            }
+        }
+    }
+    for (i = 0; i < (P.nbr_sampled_demes - 1); ++i) {
+        for (j = (i + 1); j < P.nbr_sampled_demes; ++j) {
+            for (k = 0; k < deme[i].nbr_sampled_lineages; ++k) {
+                for (l = 0; l < deme[j].nbr_sampled_lineages; ++l) {
+                    if (deme[i].tree[k].allele == deme[j].tree[l].allele) sum_stat -> Q[BETWEEN] += 1.0;
+                    npairs[BETWEEN] += 1;
+                }
+            }
+        }
+    }
   sum_stat -> Q[WITHIN] /= (double) npairs[WITHIN];
   sum_stat -> Q[BETWEEN] /= (double) npairs[BETWEEN];
 }
@@ -599,3 +604,4 @@ void write_identity_probabilities(statistics_struct multi_locus)
   fprintf(outfile,"%10.6f\n",multi_locus.Q[BETWEEN]);
 }
 #endif
+

@@ -1,12 +1,13 @@
 \name{generate.prior}
-\Rdversion{0.7}
+\Rdversion{0.8}
 \alias{generate.prior}
 \title{Generate Prior Values for the Parameters theta and M}
 \description{
 Generate a set of prior values for the parameters theta and M
 }
 \usage{
-  generate.prior(number.of.simulations,prior.theta,min.theta,max.theta,prior.M, min.M, max.M)
+  generate.prior(number.of.simulations,prior.theta,min.theta,max.theta,prior.M,
+    min.M,max.M)
 }
 \arguments{
   \item{number.of.simulations}{total number of simulations}
@@ -26,7 +27,8 @@ Generate a set of prior values for the parameters theta and M, which will be use
 \examples{
 ## This is to generate a prior distribution of the model parameters.
 
-prior <- generate.prior(number.of.simulations = 1e3,prior.theta = 'UNI',min.theta = 0.1, max.theta = 5,prior.M = 'UNI',min.M = 0.1,max.M = 5)
+prior <- generate.prior(number.of.simulations = 1e3,prior.theta = 'UNI',min.theta = 0.1,
+  max.theta = 5,prior.M = 'UNI',min.M = 0.1,max.M = 5)
 
 prior
 }

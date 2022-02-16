@@ -1,5 +1,5 @@
 \name{prcp.ca}
-\Rdversion{0.7}
+\Rdversion{0.8}
 \alias{prcp.ca}
 \title{Perform a Principal Component Analysis}
 \description{
@@ -23,17 +23,23 @@ Perform a principal component analysis (PCA) based on the simulated summary stat
 	
 ## This is to generate a pseudo-observed dataset.
 
-prior <- generate.prior(number.of.simulations = 1,prior.theta = 'UNI',min.theta = 1.0,max.theta = 1.0,prior.M = 'UNI',min.M = 1.0,max.M = 1.0)
+prior <- generate.prior(number.of.simulations = 1,prior.theta = 'UNI',min.theta = 1.0,
+  max.theta = 1.0,prior.M = 'UNI',min.M = 1.0,max.M = 1.0)
 
-target <- sim.island.model(number.of.simulations = 1,mutation.model = 'SMM',total.number.of.demes = 10,number.of.loci = 20,number.of.sampled.demes = 10,sample.sizes = 50)
+target <- sim.island.model(number.of.simulations = 1,mutation.model = 'SMM',
+  total.number.of.demes = 10,number.of.loci = 20,number.of.sampled.demes = 10,
+  sample.sizes = 50)
 
 ## This is to generate a prior distribution of the model parameters.
 
-prior <- generate.prior(number.of.simulations = 1e3,prior.theta = 'UNI',min.theta = 0.1, max.theta = 5,prior.M = 'UNI',min.M = 0.1,max.M = 5)
+prior <- generate.prior(number.of.simulations = 1e3,prior.theta = 'UNI',min.theta = 0.1,
+  max.theta = 5,prior.M = 'UNI',min.M = 0.1,max.M = 5)
 
 ## This is to generate summary statistics from simulated data.
 
-stats <- sim.island.model(number.of.simulations = 1e3,mutation.model = 'SMM',total.number.of.demes = 10,number.of.loci = 20,number.of.sampled.demes = 10,sample.sizes = 50)
+stats <- sim.island.model(number.of.simulations = 1e3,mutation.model = 'SMM',
+  total.number.of.demes = 10,number.of.loci = 20,number.of.sampled.demes = 10,
+  sample.sizes = 50)
 
 ## Perform a principal component analysis (PCA) 
 
