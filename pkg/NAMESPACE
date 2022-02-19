@@ -1,4 +1,4 @@
-useDynLib(PopGenInfeR,.registration = TRUE,.fixes = "C_")
+useDynLib(infeR,.registration = TRUE,.fixes = "C_")
 
 export(fst)
 export(expected.fst)
